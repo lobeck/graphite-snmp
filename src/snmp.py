@@ -3,6 +3,20 @@ from pysnmp.entity.rfc3413.oneliner import cmdgen
 import time
 import socket
 
+snmpTemplate = [
+		{
+			'id'		:(1,3,6,1,2,1, 2,2,1,1)
+		},
+		{ 
+			'ifName'    : (1,3,6,1,2,1,31,1,1,1, 1), 
+			'ifDesc'    : (1,3,6,1,2,1,31,1,1,1,18),
+			'ifStatus'  : (1,3,6,1,2,1, 2,2,1,8),
+			'ifBytesIn' : (1,3,6,1,2,1,31,1,1,1, 6),
+			'ifBytesOut': (1,3,6,1,2,1,31,1,1,1,10)
+		}
+	]
+	
+#snmpConfig = {'127.0.0.1' : }
 snmpTarget = '127.0.0.1'
 snmpCommunity = 'public'
 carbonAddress = '127.0.0.1'
@@ -33,76 +47,27 @@ def snmp_walk(plainOID):
 	            )
 	    else:
 	    	return varBindTable
-	        for varBindTableRow in varBindTable:
-				for name, val in varBindTableRow:
-					print '%s = %s' % (name.prettyPrint(), val.prettyPrint())
+	        #for varBindTableRow in varBindTable:
+			#	for name, val in varBindTableRow:
+			#		print '%s = %s' % (name.prettyPrint(), val.prettyPrint())
 
+
+print snmpTemplate
 snmpTable = dict()
+for config in snmpTemplate:
+	if 'id' in config:
+		configTable = snmp_walk(config['id'])
+		for configValues in configTable:
+			snmpTable[configValues[0][1]] = dict()
+	else:
+		for snmpName, snmpOid in config.iteritems():
+			dataTable = snmp_walk(snmpOid)
+			for row in dataTable:
+				for name, val in row:
+					snmpTable[name[-1]][snmpName] = val
+	
+#graphiteSocket = socket.create_connection((carbonAddress,2003))
 
-ifIds = (1,3,6,1,2,1,2,2,1,1)
-dataTable = snmp_walk(ifIds)
-
-for varBindTableRow in dataTable:
-	snmpTable[varBindTableRow[0][1]] = dict()
-	#for name, val in varBindTableRow:
-	#	print '%s = %s' % (name.prettyPrint(), val.prettyPrint())
-		
-ifName = (1,3,6,1,2,1,31,1,1,1,1)
-dataTable = snmp_walk(ifName)
-
-for varBindTableRow in dataTable:
-#	snmpTable[]
-	for name, val in varBindTableRow:
-		snmpTable[name[-1]]['ifName'] = val
-		
-ifDesc = (1,3,6,1,2,1,31,1,1,1,18)
-dataTable =  snmp_walk(ifDesc)
-
-for varBindTableRow in dataTable:
-#	snmpTable[]
-	for name, val in varBindTableRow:
-		snmpTable[name[-1]]['ifDesc'] = val
-		
-ifStatus = (1,3,6,1,2,1,2,2,1,8)
-dataTable =  snmp_walk(ifStatus)
-
-for varBindTableRow in dataTable:
-#	snmpTable[]
-	for name, val in varBindTableRow:
-		snmpTable[name[-1]]['ifStatus'] = val
-
-#ifSpeed = (1,3,6,1,2,1,2,2,1,5)
-#dataTable =  snmp_walk(ifSpeed)
-#
-#for varBindTableRow in dataTable:
-#	snmpTable[]
-#	for name, val in varBindTableRow:
-#		print '%s = %s' % (name.prettyPrint(), val.prettyPrint())
-#		print name[-1]
-#		snmpTable[name[-1]]['ifSpeed'] = val
-#
-ifBytesIn = (1,3,6,1,2,1,31,1,1,1,6)
-dataTable =  snmp_walk(ifBytesIn)
-
-for varBindTableRow in dataTable:
-#	snmpTable[]
-	for name, val in varBindTableRow:
-		snmpTable[name[-1]]['ifBytesIn'] = val
-
-ifBytesOut = (1,3,6,1,2,1,31,1,1,1,10)
-dataTable =  snmp_walk(ifBytesOut)
-
-for varBindTableRow in dataTable:
-#	snmpTable[]
-	for name, val in varBindTableRow:
-		snmpTable[name[-1]]['ifBytesOut'] = val
-
-
-#print snmpTable
-graphiteSocket = socket.create_connection((carbonAddress,2003))
-
-
-#snmp_walk((1,3,6,1,2,1,31,1,1,1,1))
 outputValues = ('ifBytesOut', 'ifBytesIn', 'ifStatus')
 for snmpValue, snmpData in snmpTable.iteritems():
 	print snmpValue
@@ -120,7 +85,7 @@ for snmpValue, snmpData in snmpTable.iteritems():
 		graphiteString.append('\n')
 		graphiteOutput = ' '.join(str(value) for value in graphiteString)
 		print graphiteOutput
-		graphiteSocket.send(graphiteOutput)
+		#graphiteSocket.send(graphiteOutput)
 
 	for name, data in snmpData.iteritems():
 		print '\t%s = %s' % (name, data)
