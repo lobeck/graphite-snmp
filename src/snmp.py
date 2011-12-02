@@ -3,7 +3,7 @@ from pysnmp.entity.rfc3413.oneliner import cmdgen
 import time
 import socket
 
-snmpTemplate = [
+networkTemplate = [
 		{
 			'id'		:(1,3,6,1,2,1, 2,2,1,1)
 		},
@@ -16,12 +16,17 @@ snmpTemplate = [
 		}
 	]
 	
-#snmpConfig = {'127.0.0.1' : }
-snmpTarget = '127.0.0.1'
-snmpCommunity = 'public'
+snmpConfig = [
+		{
+			'target' : '127.0.0.1',
+			'community' : 'public',
+			'templates' : [networkTemplate]
+		}
+	]
+		
 carbonAddress = '127.0.0.1'
 
-def snmp_walk(plainOID):
+def snmp_walk(snmpTarget, snmpCommunity, plainOID):
 	errorIndication, errorStatus, \
     	             errorIndex, varBindTable = cmdgen.CommandGenerator().nextCmd(
 	    # SNMP v1
@@ -52,19 +57,23 @@ def snmp_walk(plainOID):
 			#		print '%s = %s' % (name.prettyPrint(), val.prettyPrint())
 
 
-print snmpTemplate
 snmpTable = dict()
-for config in snmpTemplate:
-	if 'id' in config:
-		configTable = snmp_walk(config['id'])
-		for configValues in configTable:
-			snmpTable[configValues[0][1]] = dict()
-	else:
-		for snmpName, snmpOid in config.iteritems():
-			dataTable = snmp_walk(snmpOid)
-			for row in dataTable:
-				for name, val in row:
-					snmpTable[name[-1]][snmpName] = val
+	
+for config in snmpConfig:
+	snmpTarget = config['target']
+	snmpCommunity = config['community']
+	for template in config['templates']:
+		for config in template:
+			if 'id' in config:
+				configTable = snmp_walk(snmpTarget, snmpCommunity, config['id'])
+				for configValues in configTable:
+					snmpTable[configValues[0][1]] = dict()
+			else:
+				for snmpName, snmpOid in config.iteritems():
+					dataTable = snmp_walk(snmpTarget, snmpCommunity, snmpOid)
+					for row in dataTable:
+						for name, val in row:
+							snmpTable[name[-1]][snmpName] = val
 	
 #graphiteSocket = socket.create_connection((carbonAddress,2003))
 
