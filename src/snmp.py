@@ -5,7 +5,8 @@ import socket
 
 networkTemplate = [
 		{
-			'id'		:(1,3,6,1,2,1, 2,2,1,1)
+			'id'		:(1,3,6,1,2,1, 2,2,1,1),
+			'name'		: 'network'
 		},
 		{ 
 			'ifName'    : (1,3,6,1,2,1,31,1,1,1, 1), 
@@ -63,39 +64,42 @@ for config in snmpConfig:
 	snmpTarget = config['target']
 	snmpCommunity = config['community']
 	for template in config['templates']:
-		for config in template:
-			if 'id' in config:
-				configTable = snmp_walk(snmpTarget, snmpCommunity, config['id'])
-				for configValues in configTable:
-					snmpTable[configValues[0][1]] = dict()
-			else:
-				for snmpName, snmpOid in config.iteritems():
-					dataTable = snmp_walk(snmpTarget, snmpCommunity, snmpOid)
-					for row in dataTable:
-						for name, val in row:
-							snmpTable[name[-1]][snmpName] = val
+		templateName = template[0]['name']
+		snmpIdentifierOid = template[0]['id']
+
+		configTable = snmp_walk(snmpTarget, snmpCommunity, snmpIdentifierOid)
+
+		snmpTable[templateName] = dict()
+
+		for configValues in configTable:
+			snmpTable[templateName][configValues[0][1]] = dict()
+
+		for snmpName, snmpOid in template[1].iteritems():
+			dataTable = snmp_walk(snmpTarget, snmpCommunity, snmpOid)
+			for row in dataTable:
+				for name, val in row:
+					snmpTable[templateName][name[-1]][snmpName] = val
 	
 #graphiteSocket = socket.create_connection((carbonAddress,2003))
 
 outputValues = ('ifBytesOut', 'ifBytesIn', 'ifStatus')
-for snmpValue, snmpData in snmpTable.iteritems():
-	print snmpValue
-	
-	for output in outputValues:
-		graphiteData = []
-		graphiteData.append('collectd')
-		graphiteData.append(snmpTarget)
-		graphiteData.append(snmpData['ifName'])
-		graphiteData.append(output)
-		graphiteString = []
-		graphiteString.append('.'.join(str(name) for name in graphiteData))
-		graphiteString.append(snmpData[output])
-		graphiteString.append(int(time.time()))
-		graphiteString.append('\n')
-		graphiteOutput = ' '.join(str(value) for value in graphiteString)
-		print graphiteOutput
-		#graphiteSocket.send(graphiteOutput)
+for templateName, snmpData in snmpTable.iteritems(): # template based dict
+	for snmpValue, snmpData in snmpData.iteritems(): # snmpwalk based dict
+		for output in outputValues:
+			graphiteData = []
+			graphiteData.append('collectd')
+			graphiteData.append(snmpTarget)
+			graphiteData.append(snmpData['ifName'])
+			graphiteData.append(output)
+			graphiteString = []
+			graphiteString.append('.'.join(str(name) for name in graphiteData))
+			graphiteString.append(snmpData[output])
+			graphiteString.append(int(time.time()))
+			graphiteString.append('\n')
+			graphiteOutput = ' '.join(str(value) for value in graphiteString)
+			print graphiteOutput
+			#graphiteSocket.send(graphiteOutput)
 
-	for name, data in snmpData.iteritems():
-		print '\t%s = %s' % (name, data)
+		#for name, data in snmpData.iteritems():
+			#print '\t%s = %s' % (name, data)
 
