@@ -6,7 +6,9 @@ import socket
 networkTemplate = [
 		{
 			'id'		:(1,3,6,1,2,1, 2,2,1,1),
-			'name'		: 'network'
+			'name'		: 'network',
+			'outValues' : ('ifBytesOut', 'ifBytesIn', 'ifStatus'),
+			'outPattern': 'collectd.{0[config][target]}.{0[data][ifName]}.{1}'
 		},
 		{ 
 			'ifName'    : (1,3,6,1,2,1,31,1,1,1, 1), 
@@ -26,6 +28,7 @@ snmpConfig = [
 	]
 		
 carbonAddress = '127.0.0.1'
+graphiteSocket = socket.create_connection((carbonAddress,2003))
 
 def snmp_walk(snmpTarget, snmpCommunity, plainOID):
 	errorIndication, errorStatus, \
@@ -58,9 +61,29 @@ def snmp_walk(snmpTarget, snmpCommunity, plainOID):
 			#		print '%s = %s' % (name.prettyPrint(), val.prettyPrint())
 
 
-snmpTable = dict()
-	
+def writeGraphite(config, template, snmpTable):
+	for templateName, snmpData in snmpTable.iteritems(): # template based dict
+		for snmpValue, snmpData in snmpData.iteritems(): # snmpwalk based dict
+			formatDict = dict()
+			formatDict['config'] = config
+			formatDict['data'] = snmpData
+			for output in template[0]['outValues']:
+				metricName =  template[0]['outPattern'].format(formatDict, output)
+				graphiteString = []
+				graphiteString.append(metricName)
+				graphiteString.append(snmpData[output])
+				graphiteString.append(int(time.time()))
+				graphiteString.append('\n')
+				graphiteOutput = ' '.join(str(value) for value in graphiteString)
+				print graphiteOutput
+				graphiteSocket.send(graphiteOutput)
+
+			#for name, data in snmpData.iteritems():
+				#print '\t%s = %s' % (name, data)
+
+
 for config in snmpConfig:
+	snmpTable = dict()
 	snmpTarget = config['target']
 	snmpCommunity = config['community']
 	for template in config['templates']:
@@ -79,27 +102,4 @@ for config in snmpConfig:
 			for row in dataTable:
 				for name, val in row:
 					snmpTable[templateName][name[-1]][snmpName] = val
-	
-#graphiteSocket = socket.create_connection((carbonAddress,2003))
-
-outputValues = ('ifBytesOut', 'ifBytesIn', 'ifStatus')
-for templateName, snmpData in snmpTable.iteritems(): # template based dict
-	for snmpValue, snmpData in snmpData.iteritems(): # snmpwalk based dict
-		for output in outputValues:
-			graphiteData = []
-			graphiteData.append('collectd')
-			graphiteData.append(snmpTarget)
-			graphiteData.append(snmpData['ifName'])
-			graphiteData.append(output)
-			graphiteString = []
-			graphiteString.append('.'.join(str(name) for name in graphiteData))
-			graphiteString.append(snmpData[output])
-			graphiteString.append(int(time.time()))
-			graphiteString.append('\n')
-			graphiteOutput = ' '.join(str(value) for value in graphiteString)
-			print graphiteOutput
-			#graphiteSocket.send(graphiteOutput)
-
-		#for name, data in snmpData.iteritems():
-			#print '\t%s = %s' % (name, data)
-
+		writeGraphite(config, template, snmpTable)
