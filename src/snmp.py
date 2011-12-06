@@ -2,6 +2,7 @@
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 import time
 import socket
+import re
 
 networkTemplate = [
 		{
@@ -68,7 +69,7 @@ def writeGraphite(config, template, snmpTable):
 			formatDict['config'] = config
 			formatDict['data'] = snmpData
 			for output in template[0]['outValues']:
-				metricName =  template[0]['outPattern'].format(formatDict, output)
+				metricName =  re.sub('\s', '_', template[0]['outPattern'].format(formatDict, output))
 				graphiteString = []
 				graphiteString.append(metricName)
 				graphiteString.append(snmpData[output])
