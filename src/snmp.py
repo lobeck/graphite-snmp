@@ -4,7 +4,7 @@ import time
 import socket
 import re
 
-networkTemplate = [
+networkInterfaceTemplate = [
 		{
 			'id'		:(1,3,6,1,2,1, 2,2,1,1),
 			'name'		: 'network',
@@ -19,12 +19,26 @@ networkTemplate = [
 			'ifBytesOut': (1,3,6,1,2,1,31,1,1,1,10)
 		}
 	]
+		
+force10SSeriesTemplate = [
+		{
+			'name'		: 'cpuLoad',
+			'outValues' : ['stackUnitCpuLoad5sec', 'stackUnitCpuLoad1min', 'stackUnitCpuLoad5min', 'stackUnitMemUsageUtil'],
+			'outPattern': 'collectd.{0[config][target]}.{1}.{0[dataIdentifier]}'
+		},
+		{
+			'stackUnitCpuLoad5sec'	: (1,3,6,1,4,1,6027,3,10,1,2,9,1,2),
+			'stackUnitCpuLoad1min'	: (1,3,6,1,4,1,6027,3,10,1,2,9,1,3),
+			'stackUnitCpuLoad5min'	: (1,3,6,1,4,1,6027,3,10,1,2,9,1,4),
+			'stackUnitMemUsageUtil'	: (1,3,6,1,4,1,6027,3,10,1,2,9,1,5)
+		}
+	]
 	
 snmpConfig = [
 		{
 			'target' : '127.0.0.1',
 			'community' : 'public',
-			'templates' : [networkTemplate]
+			'templates' : [networkInterfaceTemplate, force10SSeriesTemplate]
 		}
 	]
 		
