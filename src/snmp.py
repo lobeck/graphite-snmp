@@ -67,6 +67,7 @@ def writeGraphite(config, template, snmpTable):
 		for snmpValue, snmpData in snmpData.iteritems(): # snmpwalk based dict
 			formatDict = dict()
 			formatDict['config'] = config
+			formatDict['config']['template'] = template
 			formatDict['data'] = snmpData
 			for output in template[0]['outValues']:
 				metricName =  re.sub('\s', '_', template[0]['outPattern'].format(formatDict, output))
