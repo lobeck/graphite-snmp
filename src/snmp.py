@@ -9,7 +9,7 @@ networkInterfaceTemplate = [
 			'id'		:(1,3,6,1,2,1, 2,2,1,1),
 			'name'		: 'network',
 			'outValues' : ('ifBytesOut', 'ifBytesIn', 'ifStatus'),
-			'outPattern': 'collectd.{0[config][target]}.{0[data][ifName]}.{1}'
+			'outPattern': 'snmp.{0[config][target]}.{0[data][ifName]}.{1}'
 		},
 		{ 
 			'ifName'    : (1,3,6,1,2,1,31,1,1,1, 1), 
@@ -24,7 +24,7 @@ force10SSeriesTemplate = [
 		{
 			'name'		: 'cpuLoad',
 			'outValues' : ['stackUnitCpuLoad5sec', 'stackUnitCpuLoad1min', 'stackUnitCpuLoad5min', 'stackUnitMemUsageUtil'],
-			'outPattern': 'collectd.{0[config][target]}.{1}.{0[dataIdentifier]}'
+			'outPattern': 'snmp.{0[config][target]}.{1}.{0[dataIdentifier]}'
 		},
 		{
 			'stackUnitCpuLoad5sec'	: (1,3,6,1,4,1,6027,3,10,1,2,9,1,2),
