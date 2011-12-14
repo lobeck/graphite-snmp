@@ -69,6 +69,8 @@ def writeGraphite(config, template, snmpTable):
 			formatDict['config'] = config
 			formatDict['config']['template'] = template
 			formatDict['data'] = snmpData
+			if 'id' not in template[0]:
+				formatDict['dataIdentifier'] = snmpValue
 			for output in template[0]['outValues']:
 				metricName =  re.sub('\s', '_', template[0]['outPattern'].format(formatDict, output))
 				graphiteString = []
@@ -90,18 +92,24 @@ for config in snmpConfig:
 	for template in config['templates']:
 		snmpTable = dict()
 		templateName = template[0]['name']
-		snmpIdentifierOid = template[0]['id']
-
-		configTable = snmp_walk(snmpTarget, snmpCommunity, snmpIdentifierOid)
 
 		snmpTable[templateName] = dict()
 
-		for configValues in configTable:
-			snmpTable[templateName][configValues[0][1]] = dict()
+		if 'id' in template[0]:
+			snmpIdentifierOid = template[0]['id']
+			configTable = snmp_walk(snmpTarget, snmpCommunity, snmpIdentifierOid)
+
+			for configValues in configTable:
+				snmpTable[templateName][configValues[0][1]] = dict()
 
 		for snmpName, snmpOid in template[1].iteritems():
 			dataTable = snmp_walk(snmpTarget, snmpCommunity, snmpOid)
 			for row in dataTable:
 				for name, val in row:
-					snmpTable[templateName][name[-1]][snmpName] = val
+					if 'id' in template[0]:
+						snmpTable[templateName][name[-1]][snmpName] = val
+					else:
+						if name[-1] not in snmpTable[templateName]:
+							snmpTable[templateName][name[-1]] = dict()
+						snmpTable[templateName][name[-1]][snmpName] = val
 		writeGraphite(config, template, snmpTable)
