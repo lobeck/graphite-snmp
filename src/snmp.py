@@ -72,7 +72,7 @@ def writeGraphite(config, template, snmpTable):
 				metricName =  re.sub('\s', '_', template[0]['outPattern'].format(formatDict, output))
 				graphiteString = []
 				graphiteString.append(metricName)
-				graphiteString.append(snmpData[output])
+				graphiteString.append(str(snmpData[output]))
 				graphiteString.append(int(time.time()))
 				graphiteString.append('\n')
 				graphiteOutput = ' '.join(str(value) for value in graphiteString)
@@ -84,10 +84,10 @@ def writeGraphite(config, template, snmpTable):
 
 
 for config in snmpConfig:
-	snmpTable = dict()
 	snmpTarget = config['target']
 	snmpCommunity = config['community']
 	for template in config['templates']:
+		snmpTable = dict()
 		templateName = template[0]['name']
 		snmpIdentifierOid = template[0]['id']
 
